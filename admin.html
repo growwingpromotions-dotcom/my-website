@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GROW WING — Admin Dashboard</title>
+  <link rel="icon" type="image/jpeg" href="images/logo.jpg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0f;
+      --bg2:       #16161a;
+      --bg3:       #1e1e24;
+      --border:    #2a2a35;
+      --accent:    #C9A86C;
+      --accent2:   #e2c98a;
+      --text:      #f0ede8;
+      --muted:     #8a8799;
+      --green:     #22c55e;
+      --blue:      #3b82f6;
+      --orange:    #f97316;
+      --red:       #ef4444;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.5);
+      --sidebar-w: 260px;
+      --font:      'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; }
+
+    /* ── SCROLLBAR ──────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ═══════════════════════════════════════════════════════════
+       LOGIN SCREEN
+    ═══════════════════════════════════════════════════════════ */
+    #loginScreen {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 50%, rgba(201,168,108,0.06) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 20%, rgba(201,168,108,0.04) 0%, transparent 50%);
+    }
+
+    .login-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--shadow);
+      animation: fadeUp 0.5s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-logo {
+      display: flex; align-items: center; gap: 0.9rem;
+      margin-bottom: 2rem;
+    }
+    .login-logo img {
+      width: 48px; height: 48px; border-radius: 10px; object-fit: cover;
+    }
+    .login-logo-text h1 { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+    .login-logo-text p  { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .login-title   { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .login-sub     { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .form-group .input-wrap { position: relative; }
+    .form-group .input-wrap i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; }
+    .form-group input {
+      width: 100%; padding: 0.85rem 1rem 0.85rem 2.8rem;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: var(--accent); }
+
+    .login-btn {
+      width: 100%; padding: 0.95rem;
+      background: var(--accent); color: #0d0d0f;
+      border: none; border-radius: var(--radius);
+      font-size: 1rem; font-weight: 700; letter-spacing: 0.04em;
+      transition: background 0.2s, transform 0.15s;
+      margin-top: 0.5rem;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .login-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+    .login-btn:disabled { opacity: 0.6; transform: none; }
+
+    .login-error {
+      display: none; margin-top: 1rem; padding: 0.8rem 1rem;
+      background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px; color: #fca5a5; font-size: 0.88rem;
+      align-items: center; gap: 0.5rem;
+    }
+    .login-error.show { display: flex; }
+
+    /* ═══════════════════════════════════════════════════════════
+       APP LAYOUT (hidden until logged in)
+    ═══════════════════════════════════════════════════════════ */
+    #app { display: none; min-height: 100vh; }
+    #app.visible { display: flex; }
+
+    /* ── SIDEBAR ─────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w); min-height: 100vh;
+      background: var(--bg2); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: fixed; left: 0; top: 0; z-index: 100;
+      transition: transform 0.3s;
+    }
+
+    .sidebar-brand {
+      padding: 1.5rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0.8rem;
+    }
+    .sidebar-brand img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; }
+    .sidebar-brand-text span:first-child { display: block; font-weight: 700; font-size: 1rem; }
+    .sidebar-brand-text span:last-child  { display: block; font-size: 0.68rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .sidebar-nav { flex: 1; padding: 1rem 0.8rem; overflow-y: auto; }
+    .sidebar-section-label { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; padding: 0.8rem 0.8rem 0.4rem; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 0.8rem;
+      padding: 0.75rem 1rem; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 500; color: var(--muted);
+      cursor: pointer; transition: all 0.18s; margin-bottom: 2px;
+      border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item i { width: 18px; text-align: center; font-size: 0.95rem; }
+    .nav-item:hover { background: var(--bg3); color: var(--text); }
+    .nav-item.active { background: rgba(201,168,108,0.12); color: var(--accent); }
+    .nav-item .badge {
+      margin-left: auto; background: var(--accent); color: #0d0d0f;
+      font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+    }
+
+    .sidebar-footer {
+      padding: 1rem 0.8rem; border-top: 1px solid var(--border);
+    }
+    .admin-info {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.6rem 0.8rem; border-radius: 10px;
+      background: var(--bg3); margin-bottom: 0.5rem;
+    }
+    .admin-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #8b6914);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700; color: #0d0d0f; flex-shrink: 0;
+    }
+    .admin-info-text span:first-child { display: block; font-size: 0.88rem; font-weight: 600; }
+    .admin-info-text span:last-child  { display: block; font-size: 0.72rem; color: var(--accent); }
+
+    .logout-btn {
+      display: flex; align-items: center; gap: 0.7rem;
+      width: 100%; padding: 0.65rem 1rem; border-radius: 10px;
+      background: none; border: none; color: var(--muted);
+      font-size: 0.88rem; font-weight: 500; cursor: pointer;
+      transition: all 0.18s;
+    }
+    .logout-btn:hover { background: rgba(239,68,68,0.1); color: var(--red); }
+
+    /* ── MAIN CONTENT ─────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1; min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── TOP BAR ──────────────────────────────────────────────── */
+    .topbar {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg2); position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(10px);
+    }
+    .topbar-left h2 { font-size: 1.2rem; font-weight: 700; }
+    .topbar-left p  { font-size: 0.8rem; color: var(--muted); }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+
+    .refresh-btn {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.55rem 1rem; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); font-size: 0.82rem; font-weight: 500;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── PAGE CONTENT ─────────────────────────────────────────── */
+    .page { display: none; padding: 2rem; flex: 1; }
+    .page.active { display: block; }
+
+    /* ── STATS CARDS ─────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+      position: relative; overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stat-card.gold::before  { background: var(--accent); }
+    .stat-card.green::before { background: var(--green); }
+    .stat-card.blue::before  { background: var(--blue); }
+    .stat-card.orange::before { background: var(--orange); }
+    .stat-card.red::before   { background: var(--red); }
+
+    .stat-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; margin-bottom: 1rem;
+    }
+    .stat-icon.gold   { background: rgba(201,168,108,0.15); color: var(--accent); }
+    .stat-icon.green  { background: rgba(34,197,94,0.12);   color: var(--green); }
+    .stat-icon.blue   { background: rgba(59,130,246,0.12);  color: var(--blue); }
+    .stat-icon.orange { background: rgba(249,115,22,0.12);  color: var(--orange); }
+    .stat-icon.red    { background: rgba(239,68,68,0.12);   color: var(--red); }
+
+    .stat-val { font-size: 2.2rem; font-weight: 800; line-height: 1; margin-bottom: 0.3rem; }
+    .stat-lbl { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+    /* ── DASHBOARD 2-COL ──────────────────────────────────────── */
+    .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media (max-width: 900px) { .dash-row { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .card-header {
+      padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-header h3 { font-size: 0.95rem; font-weight: 700; }
+    .card-header span { font-size: 0.78rem; color: var(--muted); }
+    .card-body { padding: 1.5rem; }
+
+    /* Service breakdown bars */
+    .service-bar-item { margin-bottom: 1rem; }
+    .service-bar-label { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.4rem; }
+    .service-bar-label span:last-child { color: var(--accent); font-weight: 600; }
+    .bar-track { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+    .bar-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; transition: width 0.8s ease; }
+
+    /* Recent leads mini list */
+    .mini-lead {
+      display: flex; align-items: center; gap: 0.9rem;
+      padding: 0.75rem 0; border-bottom: 1px solid var(--border);
+    }
+    .mini-lead:last-child { border-bottom: none; padding-bottom: 0; }
+    .mini-avatar {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), #6b4e11);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; color: #fff; text-transform: uppercase;
+    }
+    .mini-lead-info { flex: 1; min-width: 0; }
+    .mini-lead-info h4 { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-lead-info p  { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── STATUS BADGE ─────────────────────────────────────────── */
+    .badge-status {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+    .badge-status.new       { background: rgba(59,130,246,0.12);  color: var(--blue);   }
+    .badge-status.new::before       { background: var(--blue); }
+    .badge-status.contacted { background: rgba(249,115,22,0.12);  color: var(--orange); }
+    .badge-status.contacted::before { background: var(--orange); }
+    .badge-status.closed    { background: rgba(34,197,94,0.12);   color: var(--green);  }
+    .badge-status.closed::before    { background: var(--green); }
+    .badge-status.spam      { background: rgba(239,68,68,0.12);   color: var(--red);    }
+    .badge-status.spam::before      { background: var(--red); }
+
+    /* ── LEADS TABLE ──────────────────────────────────────────── */
+    .leads-toolbar {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .search-box {
+      position: relative; flex: 1; min-width: 220px;
+    }
+    .search-box i { position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.85rem; }
+    .search-box input {
+      width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.88rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box input:focus { border-color: var(--accent); }
+    .search-box input::placeholder { color: var(--muted); }
+
+    select.filter-select {
+      padding: 0.65rem 1rem; background: var(--bg2);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 0.88rem; outline: none; cursor: pointer;
+    }
+    select.filter-select:focus { border-color: var(--accent); }
+
+    .export-btn {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(201,168,108,0.1); border: 1px solid rgba(201,168,108,0.3);
+      color: var(--accent); font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .export-btn:hover { background: rgba(201,168,108,0.2); }
+
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--bg3); }
+    th {
+      padding: 0.9rem 1rem; text-align: left;
+      font-size: 0.75rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    td {
+      padding: 1rem; font-size: 0.88rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .td-name { font-weight: 600; }
+    .td-email { color: var(--muted); font-size: 0.82rem; }
+    .td-brand 
+    .td-date  { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+    .td-msg   { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 0.82rem; }
+
+    /* Action buttons */
+    .action-wrap { display: flex; gap: 0.4rem; align-items: center; }
+    .action-btn {
+      width: 32px; height: 32px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border); background: var(--bg3);
+      color: var(--muted); font-size: 0.8rem; cursor: pointer;
+      transition: all 0.18s;
+    }
+    .action-btn:hover.view-btn   { border-color: var(--blue);   color: var(--blue); }
+    .action-btn:hover.delete-btn { border-color: var(--red);    color: var(--red);  background: rgba(239,68,68,0.1); }
+
+    .status-select {
+      padding: 0.3rem 0.5rem; border-radius: 6px;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); font-size: 0.78rem; cursor: pointer; outline: none;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 4rem 2rem; color: var(--muted);
+    }
+    .empty-state i  { font-size: 3rem; margin-bottom: 1rem; opacity: 0.3; }
+    .empty-state h4 { font-size: 1rem; margin-bottom: 0.4rem; color: var(--text); }
+
+    /* ── MODAL (Lead Detail) ──────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem; width: 100%; max-width: 520px;
+      box-shadow: var(--shadow); transform: scale(0.96);
+      transition: transform 0.25s;
+    }
+    .modal-overlay.show .modal { transform: scale(1); }
+
+    .modal-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    .modal-header h3 { font-size: 1.2rem; font-weight: 700; }
+    .modal-header p  { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; transition: all 0.18s; flex-shrink: 0;
+    }
+    .modal-close:hover { color: var(--red); border-color: var(--red); }
+
+    .modal-field { margin-bottom: 1rem; }
+    .modal-field label { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.35rem; }
+    .modal-field p { font-size: 0.9rem; line-height: 1.6; }
+
+    /* ── ACTIVITY LOG PAGE ───────────────────────────────────── */
+    .log-list 
+    .log-item {
+      display: flex; align-items: flex-start; gap: 1rem;
+      padding: 0.9rem 0; border-bottom: 1px solid var(--border);
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-icon {
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
+    }
+    .log-icon.lead   { background: rgba(59,130,246,0.12);  color: var(--blue); }
+    .log-icon.login  { background: rgba(34,197,94,0.12);   color: var(--green); }
+    .log-icon.delete { background: rgba(239,68,68,0.12);   color: var(--red); }
+    .log-text h4 { font-size: 0.88rem; font-weight: 600; }
+    .log-text p  { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+    .log-time    { margin-left: auto; font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+
+    /* ── TOAST NOTIFICATION ──────────────────────────────────── */
+    .toast-notif {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 10000;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.9rem 1.3rem;
+      display: flex; align-items: center; gap: 0.7rem;
+      box-shadow: var(--shadow); font-size: 0.88rem;
+      transform: translateY(20px); opacity: 0; pointer-events: none;
+      transition: all 0.3s;
+    }
+    .toast-notif.show { transform: translateY(0); opacity: 1; }
+    .toast-notif i { font-size: 1.1rem; }
+    .toast-notif.success { border-left: 4px solid var(--green); }
+    .toast-notif.success i { color: var(--green); }
+    .toast-notif.error   { border-left: 4px solid var(--red); }
+    .toast-notif.error i { color: var(--red); }
+
+    /* ── LOADING SPINNER ──────────────────────────────────────── */
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(201,168,108,0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MOBILE SIDEBAR TOGGLE ───────────────────────────────── */
+    .menu-toggle-btn {
+      display: none; width: 36px; height: 36px;
+      align-items: center; justify-content: center;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); cursor: pointer; font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .menu-toggle-btn { display: flex; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .page { padding: 1.2rem; }
+      .topbar { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="images/logo.jpg" alt="GROW WING Logo" onerror="this.style.background='#C9A86C';this.removeAttribute('src')">
+      <div class="login-logo-text">
+        <h1>GROW WING</h1>
+        <p>Admin Portal</p>
+      </div>
+    </div>
+    <h2 class="login-title">Welcome Back</h2>
+    <p class="login-sub">Sign in to access your admin dashboard</p>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Username</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-user"></i>
+          <input type="text" id="loginUsername" placeholder="Enter username" autocomplete="username" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password" required>
+        </div>
+      </div>
+
+      <div class="login-error" id="loginError">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="loginErrorMsg">Invalid username or password.</span>
+      </div>
+
+      <button type="submit" class="login-btn" id="loginBtn">
+        <span>Sign In</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     ADMIN APP
+═══════════════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img src="images/logo.jpg" alt="Logo" onerror="this.style.background='#C9A86C';this.removeAttribute('src')">
+      <div class="sidebar-brand-text">
+        <span>GROW WING</span>
+        <span>Admin Dashboard</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <button class="nav-item active" data-page="dashboard">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-page="leads">
+        <i class="fa-solid fa-users"></i>
+        <span>All Leads</span>
+        <span class="badge" id="sidebarLeadCount">0</span>
+      </button>
+      <button class="nav-item" data-page="projects">
+        <i class="fa-solid fa-briefcase"></i>
+        <span>Projects</span>
+      </button>
+
+      <div class="sidebar-section-label" style="margin-top:1rem;">Filters</div>
+      <button class="nav-item" data-page="leads" data-status="new">
+        <i class="fa-solid fa-circle" style="color:var(--blue);font-size:0.6rem"></i>
+        <span>New Leads</span>
+      </button>
+      <button class="nav-item" data-page="leads" data-status="contacted">
+        <i class="fa-solid fa-circle" style="color:var(--orange);font-size:0.6rem"></i>
+        <span>Contacted</span>
+      </button>
+      <button class="nav-item" data-page="leads" data-status="closed">
+        <i class="fa-solid fa-circle" style="color:var(--green);font-size:0.6rem"></i>
+        <span>Closed / Won</span>
+      </button>
+
+      <div class="sidebar-section-label" style="margin-top:1rem;">System</div>
+      <button class="nav-item" data-page="log">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Activity Log</span>
+      </button>
+      <a href="/" class="nav-item" target="_blank">
+        <i class="fa-solid fa-globe"></i>
+        <span>View Website</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-info">
+        <div class="admin-avatar" id="adminAvatar">A</div>
+        <div class="admin-info-text">
+          <span id="adminUsername">Admin</span>
+          <span>Administrator</span>
+        </div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <button class="menu-toggle-btn" id="sidebarToggle">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="topbar-left">
+          <h2 id="pageTitle">Dashboard</h2>
+          <p id="pageSubtitle">Overview & performance metrics</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="refresh-btn" id="refreshBtn">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD PAGE ─────────────────────────────────────── -->
+    <section class="page active" id="page-dashboard">
+
+      <div class="stats-grid">
+        <div class="stat-card gold">
+          <div class="stat-icon gold"><i class="fa-solid fa-users"></i></div>
+          <div class="stat-val" id="statTotal">—</div>
+          <div class="stat-lbl">Total Leads</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon blue"><i class="fa-solid fa-bell"></i></div>
+          <div class="stat-val" id="statNew">—</div>
+          <div class="stat-lbl">New (Uncontacted)</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon green"><i class="fa-solid fa-calendar-day"></i></div>
+          <div class="stat-val" id="statToday">—</div>
+          <div class="stat-lbl">Leads Today</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-icon orange"><i class="fa-solid fa-calendar-week"></i></div>
+          <div class="stat-val" id="statWeek">—</div>
+          <div class="stat-lbl">This Week</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon green"><i class="fa-solid fa-trophy"></i></div>
+          <div class="stat-val" id="statClosed">—</div>
+          <div class="stat-lbl">Closed / Won</div>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <!-- Service Breakdown -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-chart-bar" style="color:var(--accent);margin-right:0.5rem"></i>Leads by Service</h3>
+            <span id="serviceTotal">—</span>
+          </div>
+          <div class="card-body" id="serviceBreakdown">
+            <div class="empty-state" style="padding:2rem">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Leads -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-clock" style="color:var(--accent);margin-right:0.5rem"></i>Recent Leads</h3>
+            <button class="refresh-btn" onclick="navigateTo('leads')" style="font-size:0.78rem;">View All</button>
+          </div>
+          <div class="card-body" id="recentLeads">
+            <div class="empty-state" style="padding:2rem">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── LEADS PAGE ─────────────────────────────────────────── -->
+    <section class="page" id="page-leads">
+
+      <div class="leads-toolbar">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="search" id="leadsSearch" placeholder="Search by name, email or brand...">
+        </div>
+        <select class="filter-select" id="leadsStatusFilter">
+          <option value="all">All Statuses</option>
+          <option value="new">New</option>
+          <option value="contacted">Contacted</option>
+          <option value="closed">Closed</option>
+          <option value="spam">Spam</option>
+        </select>
+        <select class="filter-select" id="leadsServiceFilter">
+          <option value="all">All Services</option>
+          <option value="Social Media Marketing Agency">Social Media Marketing</option>
+          <option value="Social Network Advertising">Social Network Advertising</option>
+          <option value="Full Digital Marketing Agency">Full Digital Marketing</option>
+          <option value="Brand Creation & Identity">Brand Identity</option>
+          <option value="Video & Commercial Production">Video Production</option>
+        </select>
+        <button class="export-btn" id="exportBtn">
+          <i class="fa-solid fa-file-csv"></i> Export CSV
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Client</th>
+              <th>Brand</th>
+              <th>Service</th>
+              <th>Message</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody">
+            <tr>
+              <td colspan="8" style="text-align:center;padding:3rem;">
+                <div class="spinner"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:0.8rem;font-size:0.8rem;color:var(--muted);text-align:right;" id="leadCount"></div>
+
+    </section>
+
+    <!-- ── PROJECTS PAGE ──────────────────────────────────────── -->
+    <section class="page" id="page-projects">
+      <div class="leads-toolbar">
+        <h2 style="flex:1;">Portfolio Projects</h2>
+        <button class="export-btn" id="addProjectBtn" style="background:var(--accent); color:#0d0d0f; border:none;">
+          <i class="fa-solid fa-plus"></i> Add New Project
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Image</th>
+              <th>Title / Category</th>
+              <th>Description</th>
+              <th>Metrics</th>
+              <th>Order</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="projectsTableBody">
+            <tr>
+              <td colspan="8" style="text-align:center;padding:3rem;">
+                <div class="spinner"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── LOG PAGE ───────────────────────────────────────────── -->
+    <section class="page" id="page-log">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-list-check" style="color:var(--accent);margin-right:0.5rem"></i>Activity Log</h3>
+          <span>Last 50 events</span>
+        </div>
+        <div class="card-body">
+          <div class="log-list" id="logList">
+            <div style="text-align:center;padding:2rem;"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── LEAD DETAIL MODAL ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="leadModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 id="modalLeadName">Lead Details</h3>
+        <p id="modalLeadDate" style="color:var(--muted);font-size:0.8rem;margin-top:0.2rem"></p>
+      </div>
+      <button class="modal-close" id="modalClose"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-field">
+      <label>Email Address</label>
+      <p id="modalLeadEmail"></p>
+    </div>
+    <div class="modal-field">
+      <label>Company / Brand</label>
+      <p id="modalLeadBrand"></p>
+    </div>
+    <div class="modal-field">
+      <label>Service Required</label>
+      <p id="modalLeadService"></p>
+    </div>
+    <div class="modal-field">
+      <label>Message / Notes</label>
+      <p id="modalLeadMsg" style="color:var(--muted);line-height:1.7;"></p>
+    </div>
+    <div class="modal-field">
+      <label>Status</label>
+      <p id="modalLeadStatus"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROJECT MODAL ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 id="modalProjectTitle">Add Project</h3>
+      </div>
+      <button class="modal-close" id="modalProjectClose"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="projectForm">
+      <input type="hidden" id="projId">
+      
+      <div class="form-group">
+        <label>Title *</label>
+        <input type="text" id="projTitle" required style="width:100%; padding:0.6rem; border-radius:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+      </div>
+      
+      <div class="form-group" style="display:flex; gap:1rem;">
+        <div style="flex:1;">
+          <label>Category *</label>
+          <select id="projCategory" required style="width:100%; padding:0.6rem; border-radius:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+            <option value="branding">Brand Identity</option>
+            <option value="social">Social Media</option>
+            <option value="paid">Paid Advertising</option>
+            <option value="video">Video Production</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label>Sort Order</label>
+          <input type="number" id="projOrder" value="0" style="width:100%; padding:0.6rem; border-radius:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Image URL (e.g. images/portfolio-1.jpg)</label>
+        <input type="text" id="projImg" style="width:100%; padding:0.6rem; border-radius:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+      </div>
+
+      <div class="form-group" style="display:flex; gap:1rem;">
+        <div style="flex:1;">
+          <label>Metric Tag (e.g. Performance)</label>
+          <input type="text" id="projMetricTag" style="width:100%; padding:0.6rem; border-radius:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+        </div>
+        <div style="flex:1;">
+          <label>Metric Value (e.g. +420%)</label>
+          <input type="text" id="projMetricNum" style="width:100%; padding:0.6rem; border-radius:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="projDesc" rows="3" style="width:100%; padding:0.6rem; border-radius:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text); resize:vertical;"></textarea>
+      </div>
+
+      <div class="form-group" style="display:flex; align-items:center; gap:0.5rem;">
+        <input type="checkbox" id="projActive" checked>
+        <label for="projActive" style="margin:0; text-transform:none;">Project is Active (Visible on website)</label>
+      </div>
+
+      <button type="submit" class="export-btn" id="saveProjectBtn" style="width:100%; margin-top:1rem; justify-content:center; background:var(--accent); color:#0d0d0f; border:none;">
+        Save Project
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-notif" id="adminToast">
+  <i id="adminToastIcon" class="fa-solid fa-circle-check"></i>
+  <span id="adminToastMsg">Done!</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     ADMIN JAVASCRIPT
+═══════════════════════════════════════════════════════════════════ -->
+<script>
+  /* ── State ──────────────────────────────────────────────── */
+  let TOKEN = localStorage.getItem('gw_admin_token') || null;
+  let currentPage = 'dashboard';
+  let allLeads = [];
+
+  /* ── Helpers ────────────────────────────────────────────── */
+  function toast(msg, type = 'success') {
+    const el   = document.getElementById('adminToast');
+    const icon = document.getElementById('adminToastIcon');
+    const txt  = document.getElementById('adminToastMsg');
+    txt.textContent = msg;
+    el.className = `toast-notif show ${type}`;
+    icon.className = type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  function formatDate(raw) {
+    if (!raw) return '—';
+    const d = new Date(raw);
+    return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+      + ' ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function statusBadge(status) {
+    const labels = { new:'New', contacted:'Contacted', closed:'Closed', spam:'Spam' };
+    return `<span class="badge-status ${status}">${labels[status] || status}</span>`;
+  }
+
+  function initials(name) {
+    return (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  async function api(method, path, body) {
+    const res = await fetch(path, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(TOKEN ? { 'Authorization': `Bearer ${TOKEN}` } : {})
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    return res.json();
+  }
+
+  /* ── Navigation ─────────────────────────────────────────── */
+  function navigateTo(page, filters = {}) {
+    currentPage = page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    const el = document.getElementById(`page-${page}`);
+    if (el) el.classList.add('active');
+
+    document.querySelectorAll(`.nav-item[data-page="${page}"]`).forEach(n => n.classList.add('active'));
+
+    const titles = {
+      dashboard: ['Dashboard', 'Overview & performance metrics'],
+      leads: ['All Leads', 'Manage and track all client inquiries'],
+      projects: ['Portfolio Projects', 'Manage visible projects on website'],
+      log: ['Activity Log', 'System events and actions']
+    };
+    const [title, sub] = titles[page] || ['Admin', ''];
+    document.getElementById('pageTitle').textContent = title;
+    document.getElementById('pageSubtitle').textContent = sub;
+
+    if (page === 'dashboard') loadDashboard();
+    if (page === 'leads') {
+      if (filters.status) document.getElementById('leadsStatusFilter').value = filters.status;
+      loadLeads();
+    }
+    if (page === 'projects') loadProjects();
+    if (page === 'log') loadLog();
+  }
+
+  /* ── Login ──────────────────────────────────────────────── */
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+    const errMsg = document.getElementById('loginErrorMsg');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span><span>Signing in...</span>';
+    errEl.classList.remove('show');
+
+    try {
+      const data = await api('POST', '/api/admin/login', {
+        username: document.getElementById('loginUsername').value,
+        password: document.getElementById('loginPassword').value
+      });
+
+      if (data.success) {
+        TOKEN = data.token;
+        localStorage.setItem('gw_admin_token', TOKEN);
+        showApp(data.username);
+      } else {
+        errMsg.textContent = data.message || 'Invalid credentials.';
+        errEl.classList.add('show');
+      }
+    } catch {
+      errMsg.textContent = 'Cannot connect to server. Make sure node server.js is running.';
+      errEl.classList.add('show');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>Sign In</span><i class="fa-solid fa-arrow-right"></i>';
+    }
+  });
+
+  function showApp(username) {
+    document.getElementById('loginScreen').style.display = 'none';
+    const app = document.getElementById('app');
+    app.style.display = 'flex';
+    requestAnimationFrame(() => app.classList.add('visible'));
+
+    const uname = username || 'Admin';
+    document.getElementById('adminUsername').textContent = uname;
+    document.getElementById('adminAvatar').textContent = uname[0].toUpperCase();
+    document.getElementById('sidebarLeadCount');
+
+    navigateTo('dashboard');
+  }
+
+  /* ── Logout ─────────────────────────────────────────────── */
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    TOKEN = null;
+    localStorage.removeItem('gw_admin_token');
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginForm').reset();
+  });
+
+  /* ── Dashboard ──────────────────────────────────────────── */
+  async function loadDashboard() {
+    try {
+      const data = await api('GET', '/api/admin/stats');
+      if (!data.success) return;
+
+      const s = data.stats;
+      document.getElementById('statTotal').textContent  = s.total;
+      document.getElementById('statNew').textContent    = s.newLeads;
+      document.getElementById('statToday').textContent  = s.today;
+      document.getElementById('statWeek').textContent   = s.thisWeek;
+      document.getElementById('statClosed').textContent = s.closed;
+      document.getElementById('sidebarLeadCount').textContent = s.total;
+      document.getElementById('serviceTotal').textContent = s.total + ' total';
+
+      // Service breakdown bars
+      const maxCount = Math.max(...(s.byService.map(x => x.count)), 1);
+      document.getElementById('serviceBreakdown').innerHTML = s.byService.length
+        ? s.byService.map(sv => `
+          <div class="service-bar-item">
+            <div class="service-bar-label">
+              <span>${sv.label}</span>
+              <span>${sv.count}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${(sv.count / maxCount * 100).toFixed(1)}%"></div>
+            </div>
+          </div>`).join('')
+        : `<div class="empty-state"><i class="fa-solid fa-chart-bar"></i><h4>No data yet</h4></div>`;
+
+      // Recent leads
+      document.getElementById('recentLeads').innerHTML = s.recent && s.recent.length
+        ? s.recent.map(l => `
+          <div class="mini-lead">
+            <div class="mini-avatar">${initials(l.full_name)}</div>
+            <div class="mini-lead-info">
+              <h4>${l.full_name}</h4>
+              <p>${l.brand_name} · ${l.service_type}</p>
+            </div>
+            ${statusBadge(l.status)}
+          </div>`).join('')
+        : `<div class="empty-state" style="padding:2rem"><i class="fa-solid fa-users"></i><h4>No leads yet</h4><p>Submit the contact form to see entries here.</p></div>`;
+
+    } catch (err) {
+      console.error(err);
+      toast('Failed to load dashboard data', 'error');
+    }
+  }
+
+  /* ── Leads Table ────────────────────────────────────────── */
+  async function loadLeads() {
+    const search  = document.getElementById('leadsSearch').value.trim();
+    const status  = document.getElementById('leadsStatusFilter').value;
+    const service = document.getElementById('leadsServiceFilter').value;
+
+    const params = new URLSearchParams();
+    if (search)  params.set('search',  search);
+    if (status  !== 'all') params.set('status',  status);
+    if (service !== 'all') params.set('service', service);
+
+    try {
+      const data = await api('GET', `/api/admin/leads?${params}`);
+      if (!data.success) return;
+
+      allLeads = data.leads;
+      document.getElementById('leadCount').textContent = `Showing ${data.leads.length} lead${data.leads.length !== 1 ? 's' : ''}`;
+      document.getElementById('sidebarLeadCount').textContent = data.total;
+
+      const tbody = document.getElementById('leadsTableBody');
+      if (!data.leads.length) {
+        tbody.innerHTML = `<tr><td colspan="8">
+          <div class="empty-state">
+            <i class="fa-solid fa-inbox"></i>
+            <h4>No leads found</h4>
+            <p>Try adjusting your filters or submit the contact form.</p>
+          </div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.leads.map(l => `
+        <tr>
+          <td style="color:var(--muted);font-size:0.78rem;">#${l.id}</td>
+          <td>
+            <div class="td-name">${escHtml(l.full_name)}</div>
+            <div class="td-email">${escHtml(l.email)}</div>
+          </td>
+          <td class="td-brand">${escHtml(l.brand_name)}</td>
+          <td><span style="font-size:0.8rem;">${escHtml(l.service_type)}</span></td>
+          <td class="td-msg" title="${escHtml(l.message || '')}">${escHtml(l.message || '—')}</td>
+          <td>
+            <select class="status-select" onchange="updateStatus(${l.id}, this.value)">
+              <option value="new"       ${l.status==='new'?'selected':''}>New</option>
+              <option value="contacted" ${l.status==='contacted'?'selected':''}>Contacted</option>
+              <option value="closed"    ${l.status==='closed'?'selected':''}>Closed</option>
+              <option value="spam"      ${l.status==='spam'?'selected':''}>Spam</option>
+            </select>
+          </td>
+          <td class="td-date">${formatDate(l.created_at)}</td>
+          <td>
+            <div class="action-wrap">
+              <button class="action-btn view-btn" title="View Details" onclick="viewLead(${l.id})">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+              <button class="action-btn delete-btn" title="Delete Lead" onclick="deleteLead(${l.id}, '${escHtml(l.full_name)}')">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>`).join('');
+    } catch (err) {
+      console.error(err);
+      toast('Failed to load leads', 'error');
+    }
+  }
+
+  function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Update Status ──────────────────────────────────────── */
+  async function updateStatus(id, status) {
+    try {
+      const data = await api('PATCH', `/api/admin/leads/${id}/status`, { status });
+      if (data.success) toast(`Status updated to "${status}"`);
+      else toast('Failed to update status', 'error');
+    } catch {
+      toast('Update failed', 'error');
+    }
+  }
+
+  /* ── Delete Lead ────────────────────────────────────────── */
+  async function deleteLead(id, name) {
+    if (!confirm(`Delete lead from "${name}"?\nThis action cannot be undone.`)) return;
+    try {
+      const data = await api('DELETE', `/api/admin/leads/${id}`);
+      if (data.success) { toast(`Lead "${name}" deleted`); loadLeads(); }
+      else toast('Delete failed', 'error');
+    } catch {
+      toast('Delete failed', 'error');
+    }
+  }
+
+  /* ── View Lead Modal ─────────────────────────────────────── */
+  function viewLead(id) {
+    const l = allLeads.find(x => x.id === id);
+    if (!l) return;
+    document.getElementById('modalLeadName').textContent    = l.full_name;
+    document.getElementById('modalLeadDate').textContent    = 'Submitted: ' + formatDate(l.created_at);
+    document.getElementById('modalLeadEmail').textContent   = l.email;
+    document.getElementById('modalLeadBrand').textContent   = l.brand_name;
+    document.getElementById('modalLeadService').textContent = l.service_type;
+    document.getElementById('modalLeadMsg').textContent     = l.message || 'No message provided.';
+    document.getElementById('modalLeadStatus').innerHTML    = statusBadge(l.status);
+    document.getElementById('leadModal').classList.add('show');
+  }
+
+  document.getElementById('modalClose').addEventListener('click', () => {
+    document.getElementById('leadModal').classList.remove('show');
+  });
+  document.getElementById('leadModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('leadModal'))
+      document.getElementById('leadModal').classList.remove('show');
+  });
+
+  /* ── Projects Logic ─────────────────────────────────────── */
+  let allProjects = [];
+
+  async function loadProjects() {
+    try {
+      const data = await api('GET', '/api/admin/projects');
+      if (!data.success) return;
+      allProjects = data.projects;
+      const tbody = document.getElementById('projectsTableBody');
+      if (!allProjects.length) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><h4>No projects found</h4></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = allProjects.map(p => `
+        <tr>
+          <td style="color:var(--muted);">${p.id}</td>
+          <td><img src="${escHtml(p.image_url)}" alt="Proj" style="width:50px; height:50px; object-fit:cover; border-radius:4px;"></td>
+          <td>
+            <strong>${escHtml(p.title)}</strong><br>
+            <span style="font-size:0.8rem; color:var(--muted); text-transform:uppercase;">${escHtml(p.category)}</span>
+          </td>
+          <td><div style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml(p.description)}</div></td>
+          <td>
+            <strong>${escHtml(p.metric_tag)}</strong><br>
+            <span style="color:var(--green);">${escHtml(p.metric_num)}</span>
+          </td>
+          <td>${p.sort_order}</td>
+          <td>${p.is_active ? statusBadge('new').replace('New', 'Active') : statusBadge('closed').replace('Closed', 'Hidden')}</td>
+          <td>
+            <div class="action-wrap">
+              <button class="action-btn view-btn" onclick="openProjectModal(${p.id})"><i class="fa-solid fa-pen"></i></button>
+              <button class="action-btn delete-btn" onclick="deleteProject(${p.id}, '${escHtml(p.title)}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>`).join('');
+    } catch {
+      toast('Failed to load projects', 'error');
+    }
+  }
+
+  function openProjectModal(id = null) {
+    const form = document.getElementById('projectForm');
+    form.reset();
+    document.getElementById('modalProjectTitle').textContent = id ? 'Edit Project' : 'Add Project';
+    if (id) {
+      const p = allProjects.find(x => x.id === id);
+      if (p) {
+        document.getElementById('projId').value = p.id;
+        document.getElementById('projTitle').value = p.title;
+        document.getElementById('projCategory').value = p.category;
+        document.getElementById('projOrder').value = p.sort_order;
+        document.getElementById('projImg').value = p.image_url;
+        document.getElementById('projMetricTag').value = p.metric_tag;
+        document.getElementById('projMetricNum').value = p.metric_num;
+        document.getElementById('projDesc').value = p.description;
+        document.getElementById('projActive').checked = p.is_active === 1;
+      }
+    } else {
+      document.getElementById('projId').value = '';
+    }
+    document.getElementById('projectModal').classList.add('show');
+  }
+
+  document.getElementById('addProjectBtn').addEventListener('click', () => openProjectModal());
+  document.getElementById('modalProjectClose').addEventListener('click', () => document.getElementById('projectModal').classList.remove('show'));
+  
+  document.getElementById('projectForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('projId').value;
+    const body = {
+      title: document.getElementById('projTitle').value,
+      category: document.getElementById('projCategory').value,
+      sort_order: document.getElementById('projOrder').value,
+      image_url: document.getElementById('projImg').value,
+      metric_tag: document.getElementById('projMetricTag').value,
+      metric_num: document.getElementById('projMetricNum').value,
+      description: document.getElementById('projDesc').value,
+      is_active: document.getElementById('projActive').checked ? 1 : 0
+    };
+    
+    const method = id ? 'PUT' : 'POST';
+    const endpoint = id ? `/api/admin/projects/${id}` : '/api/admin/projects';
+    
+    try {
+      const data = await api(method, endpoint, body);
+      if (data.success) {
+        toast(`Project ${id ? 'updated' : 'added'} successfully`);
+        document.getElementById('projectModal').classList.remove('show');
+        loadProjects();
+      } else {
+        toast(data.message || 'Error saving project', 'error');
+      }
+    } catch {
+      toast('Failed to save project', 'error');
+    }
+  });
+
+  async function deleteProject(id, title) {
+    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+    try {
+      const data = await api('DELETE', `/api/admin/projects/${id}`);
+      if (data.success) {
+        toast('Project deleted');
+        loadProjects();
+      } else {
+        toast('Failed to delete', 'error');
+      }
+    } catch {
+      toast('Delete failed', 'error');
+    }
+  }
+
+  /* ── Activity Log ────────────────────────────────────────── */
+  async function loadLog() {
+    try {
+      const data = await api('GET', '/api/admin/log');
+      if (!data.success) return;
+
+      const iconMap = {
+        NEW_LEAD:    { cls:'lead',   icon:'fa-user-plus',    label:'New Lead' },
+        ADMIN_LOGIN: { cls:'login',  icon:'fa-right-to-bracket', label:'Login' },
+        DELETE_LEAD: { cls:'delete', icon:'fa-trash',        label:'Deleted' }
+      };
+
+      document.getElementById('logList').innerHTML = data.logs.length
+        ? data.logs.map(l => {
+            const m = iconMap[l.action] || { cls:'lead', icon:'fa-circle-info', label:l.action };
+            return `<div class="log-item">
+              <div class="log-icon ${m.cls}"><i class="fa-solid ${m.icon}"></i></div>
+              <div class="log-text">
+                <h4>${m.label}</h4>
+                <p>${escHtml(l.detail || '')}</p>
+              </div>
+              <div class="log-time">${formatDate(l.logged_at)}</div>
+            </div>`;
+          }).join('')
+        : `<div class="empty-state"><i class="fa-solid fa-clock"></i><h4>No activity yet</h4></div>`;
+    } catch {
+      toast('Failed to load log', 'error');
+    }
+  }
+
+  /* ── Export CSV ──────────────────────────────────────────── */
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    window.location.href = `/api/admin/export`;
+  });
+
+  /* ── Filters & Search ────────────────────────────────────── */
+  let searchDebounce;
+  document.getElementById('leadsSearch').addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(loadLeads, 350);
+  });
+  document.getElementById('leadsStatusFilter').addEventListener('change', loadLeads);
+  document.getElementById('leadsServiceFilter').addEventListener('change', loadLeads);
+
+  /* ── Sidebar Nav ─────────────────────────────────────────── */
+  document.querySelectorAll('.nav-item[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const page   = btn.dataset.page;
+      const status = btn.dataset.status;
+      if (status) {
+        navigateTo(page, { status });
+      } else {
+        navigateTo(page);
+      }
+      // close sidebar on mobile
+      document.getElementById('sidebar').classList.remove('open');
+    });
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', () => navigateTo(currentPage));
+
+  /* Mobile sidebar toggle */
+  document.getElementById('sidebarToggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+
+  /* ── Auto-login if token saved ───────────────────────────── */
+  (async () => {
+    if (!TOKEN) return;
+    try {
+      const data = await api('GET', '/api/admin/stats');
+      if (data.success) {
+        const stored = localStorage.getItem('gw_admin_token');
+        // Try to get username from JWT payload
+        try {
+          const payload = JSON.parse(atob(stored.split('.')[1]));
+          showApp(payload.username);
+        } catch {
+          showApp('Admin');
+        }
+      } else {
+        TOKEN = null;
+        localStorage.removeItem('gw_admin_token');
+      }
+    } catch {
+      TOKEN = null;
+      localStorage.removeItem('gw_admin_token');
+    }
+  })();
+</script>
+
+</body>
+</html>
